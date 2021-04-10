@@ -1,6 +1,45 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+
+const createFile = (path: vscode.Uri, content: string) => {
+	const wsedit = new vscode.WorkspaceEdit();
+	wsedit.createFile(path, { overwrite: true, ignoreIfExists: true });
+
+	const edit = vscode.TextEdit.insert(new vscode.Position(0,0), content);
+	wsedit.set(path, [edit]);
+	vscode.workspace.applyEdit(wsedit);
+	
+	vscode.workspace.openTextDocument(vscode.Uri.parse(path.toString())).then((doc: vscode.TextDocument) => {
+		vscode.window.showTextDocument(doc).then(e => {
+			e.edit(edit => {
+				edit.insert(new vscode.Position(0, 0), content);
+			});
+		});
+	}, (error: any) => {
+		console.error(error);
+	});
+};
+
+const createContent = (className: string, header: boolean): string => {
+	return header ?
+`#pragma once
+
+class ${className}
+{
+	${className}();
+	~${className}();
+};
+`:
+`// Place includes...
+
+${className}::${className}
+{
+}
+`
+}
+
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -13,9 +52,25 @@ export function activate(context: vscode.ExtensionContext) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('cxx-tools.helloWorld', () => {
+	let disposable = vscode.commands.registerCommand('cxx-tools.createclass', () => {
 		// The code you place here will be executed every time your command is executed
 
+		const options: vscode.SaveDialogOptions = {
+			title: 'Create class'
+		};
+
+		const classname = 'MyClass';
+
+		vscode.window.showSaveDialog(options).then(uri => {
+			if (!uri)
+				return;
+
+			console.log(uri)
+						
+			createFile(vscode.Uri.parse(uri.toString() + '.h'),   createContent(classname, true));
+			createFile(vscode.Uri.parse(uri.toString() + '.cpp'), createContent(classname, false));
+		});
+		
 		// Display a message box to the user
 		vscode.window.showInformationMessage('Hello World from C++ Tools!');
 	});

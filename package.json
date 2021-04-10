@@ -10,14 +10,14 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:cxx-tools.helloWorld"
+		"onCommand:cxx-tools.createclass"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "cxx-tools.helloWorld",
-				"title": "Hello World"
+				"command": "cxx-tools.createclass",
+				"title": "Create class"
 			}
 		]
 	},
@@ -41,5 +41,6 @@
 		"mocha": "^8.2.1",
 		"typescript": "^4.1.3",
 		"vscode-test": "^1.5.0"
-	}
+	},
+	"dependencies": {}
 }
