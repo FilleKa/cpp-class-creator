@@ -20,15 +20,15 @@ const createFile = (path: vscode.Uri, content: string) => {
 };
 
 enum IncludeGuard {
-	Pragma,
-	Define,
-	None
+	pragma,
+	define,
+	none
 };
 
 const createContent = (className: string,
 					   header: boolean,
 					   filename: string,
-					   guard: IncludeGuard = IncludeGuard.None,
+					   guard: IncludeGuard = IncludeGuard.none,
 					   headerExtension: string): string => {
 	let content = header ?
 `class ${className}
@@ -46,17 +46,17 @@ ${className}::${className}()
 `;
 	if (header) {
 		switch (guard) {
-			case IncludeGuard.Define:
+			case IncludeGuard.define:
 				let header_ext = headerExtension.replace(/./, '');
 				const def = (filename + "_" + header_ext).toUpperCase();
-				content = `#ifndef ${def}\n#define ${def}\n\n${content}\n\n#endif // ${def}`
+				content = `#ifndef ${def}\n#define ${def}\n\n${content}\n\n#endif // ${def}`;
 				break;
 
-			case IncludeGuard.Pragma:
+			case IncludeGuard.pragma:
 				content = `#pragma once\n\n${content}`;
 				break;
 
-			case IncludeGuard.None:
+			case IncludeGuard.none:
 				break;
 		}
 	}
@@ -81,24 +81,29 @@ const getClassInfo = async (label: string, desc: string): Promise<ClassInfo> => 
 	const guardValue = await vscode.window.showQuickPick(["Pragma once", "Define", "None"], { canPickMany: false });
 	const headerExtension = await vscode.window.showQuickPick([".h", ".hpp"], { canPickMany: false });
 	
-	let includeGuard = IncludeGuard.None;
+	let includeGuard = IncludeGuard.none;
 
-	if (!headerExtension)
+	if (!headerExtension) {
 		return Promise.reject();
+	}
 
-	 if (guardValue == "Pragma once")
-		includeGuard = IncludeGuard.Pragma;
-	else if (guardValue == "Define")
-		includeGuard = IncludeGuard.Define;
+	if (guardValue == "Pragma once") {
+		 includeGuard = IncludeGuard.pragma;
+	}
+	else if (guardValue == "Define") {
+		includeGuard = IncludeGuard.define;
+	}
 	
-	if (classname && guardValue)
+	if (classname && guardValue) {
 		return {
 			className: classname,
 			includeGuard: includeGuard,
 			headerExtension: headerExtension
 		};
-	else
+	}
+	else {
 		return Promise.reject();
+	}
 }
 
 export async function activate(context: vscode.ExtensionContext) {
