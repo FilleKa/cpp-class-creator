@@ -3,7 +3,7 @@
 	"name": "cxx-tools",
 	"displayName": "C++ class creator",
 	"description": "Small tool for creating .cpp & .h/.hpp files",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"engines": {
 		"vscode": "^1.55.0"
 	},
@@ -28,7 +28,8 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
+		"test": "node ./out/test/runTest.js",
+		"deploy": "vsce publish --yarn"
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.55.0",

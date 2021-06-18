@@ -1,9 +1,9 @@
 # Change Log
 
-All notable changes to the "cxx-tools" extension will be documented in this file.
+## 0.1.2
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+- Choose between .h/.hpp header file extension
 
-## [Unreleased]
+## 0.1.0
 
 - Initial release
