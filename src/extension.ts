@@ -1,7 +1,5 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import * as fs from 'fs';
+import * as path from 'path';
 
 const createFile = (path: vscode.Uri, content: string) => {
 	const wsedit = new vscode.WorkspaceEdit();
@@ -10,7 +8,6 @@ const createFile = (path: vscode.Uri, content: string) => {
 	const edit = vscode.TextEdit.insert(new vscode.Position(0,0), content);
 	wsedit.set(path, [edit]);
 	vscode.workspace.applyEdit(wsedit);
-	
 	vscode.workspace.openTextDocument(vscode.Uri.parse(path.toString())).then((doc: vscode.TextDocument) => {
 		vscode.window.showTextDocument(doc).then(e => {
 			e.edit(edit => {
@@ -22,61 +19,114 @@ const createFile = (path: vscode.Uri, content: string) => {
 	});
 };
 
-const createContent = (className: string, header: boolean): string => {
-	return header ?
-`#pragma once
+enum IncludeGuard {
+	Pragma,
+	Define,
+	None
+};
 
-class ${className}
+const createContent = (className: string,
+					   header: boolean,
+					   filename: string,
+					   guard: IncludeGuard = IncludeGuard.None,
+					   headerExtension: string): string => {
+	let content = header ?
+`class ${className}
 {
+public:
 	${className}();
-	~${className}();
+	~${className}() = default;
 };
 `:
-`// Place includes...
+`#include "${filename}${headerExtension}"
 
-${className}::${className}
+${className}::${className}()
 {
 }
-`
+`;
+	if (header) {
+		switch (guard) {
+			case IncludeGuard.Define:
+				let header_ext = headerExtension.replace(/./, '');
+				const def = (filename + "_" + header_ext).toUpperCase();
+				content = `#ifndef ${def}\n#define ${def}\n\n${content}\n\n#endif // ${def}`
+				break;
+
+			case IncludeGuard.Pragma:
+				content = `#pragma once\n\n${content}`;
+				break;
+
+			case IncludeGuard.None:
+				break;
+		}
+	}
+
+	return content;
 }
 
+interface ClassInfo {
+	className: string;
+	includeGuard: IncludeGuard;
+	headerExtension: string;
+}
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+const getClassInfo = async (label: string, desc: string): Promise<ClassInfo> => {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "cxx-tools" is now active!');
+	const options: vscode.InputBoxOptions = {
+		placeHolder: label,
+		prompt: desc
+	};
+	
+	const classname = await vscode.window.showInputBox(options);
+	const guardValue = await vscode.window.showQuickPick(["Pragma once", "Define", "None"], { canPickMany: false });
+	const headerExtension = await vscode.window.showQuickPick([".h", ".hpp"], { canPickMany: false });
+	
+	let includeGuard = IncludeGuard.None;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('cxx-tools.createclass', () => {
-		// The code you place here will be executed every time your command is executed
+	if (!headerExtension)
+		return Promise.reject();
 
-		const options: vscode.SaveDialogOptions = {
-			title: 'Create class'
+	 if (guardValue == "Pragma once")
+		includeGuard = IncludeGuard.Pragma;
+	else if (guardValue == "Define")
+		includeGuard = IncludeGuard.Define;
+	
+	if (classname && guardValue)
+		return {
+			className: classname,
+			includeGuard: includeGuard,
+			headerExtension: headerExtension
 		};
+	else
+		return Promise.reject();
+}
 
-		const classname = 'MyClass';
+export async function activate(context: vscode.ExtensionContext) {
 
-		vscode.window.showSaveDialog(options).then(uri => {
-			if (!uri)
-				return;
+	let disposable = vscode.commands.registerCommand('cxx-tools.createclass', async () => {
+		try {
+			const options: vscode.SaveDialogOptions = {
+				title: 'Create class'
+			};
 
-			console.log(uri)
-						
-			createFile(vscode.Uri.parse(uri.toString() + '.h'),   createContent(classname, true));
-			createFile(vscode.Uri.parse(uri.toString() + '.cpp'), createContent(classname, false));
-		});
-		
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from C++ Tools!');
+			const classInfo = await getClassInfo('Class name', 'Enter class name');			
+	
+			vscode.window.showSaveDialog(options).then(uri => {
+				if (!uri) return;
+				const headerUri = vscode.Uri.parse(uri.toString() + classInfo.headerExtension);
+				const sourceUri = vscode.Uri.parse(uri.toString() + '.cpp');
+				const filename = path.basename(uri.toString());
+
+				createFile(headerUri, createContent(classInfo.className, true , filename, classInfo.includeGuard, classInfo.headerExtension));
+				createFile(sourceUri, createContent(classInfo.className, false, filename, classInfo.includeGuard, classInfo.headerExtension));
+			});
+			
+			vscode.window.showInformationMessage('Created class: ' + classInfo.className);
+		} catch (error) {
+		}
 	});
 
 	context.subscriptions.push(disposable);
 }
 
-// this method is called when your extension is deactivated
 export function deactivate() {}

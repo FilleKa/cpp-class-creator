@@ -1,8 +1,9 @@
 {
+	"publisher": "FilipKarlsson",
 	"name": "cxx-tools",
-	"displayName": "C++ Tools",
-	"description": "Helpful tools for developing c++ applications",
-	"version": "0.0.1",
+	"displayName": "C++ class creator",
+	"description": "Small tool for creating .cpp & .h/.hpp files",
+	"version": "0.1.1",
 	"engines": {
 		"vscode": "^1.55.0"
 	},
